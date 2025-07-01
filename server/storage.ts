@@ -16,12 +16,14 @@ import {
   type InsertAiChatSession,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, like, and } from "drizzle-orm";
+import { eq, desc, like, and, sql } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations - mandatory for Replit Auth
+  // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  getUserCount(): Promise<number>;
   
   // SSDC Transcripts
   getSsdcTranscripts(filters?: { industry?: string, search?: string }): Promise<SsdcTranscript[]>;
@@ -53,9 +55,14 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations - mandatory for Replit Auth
+  // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
 
@@ -72,6 +79,11 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+  
+  async getUserCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(users);
+    return Number(result[0].count);
   }
 
   // SSDC Transcripts

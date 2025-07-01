@@ -1,11 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, Bot } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Landing() {
-  const handleLogin = () => {
-    window.location.href = "/api/login";
-  };
-
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -20,9 +17,11 @@ export default function Landing() {
                 Business Development Idea Agent
               </h1>
             </div>
-            <Button onClick={handleLogin} className="btn-primary">
-              Sign In
-            </Button>
+            <Link href="/login">
+              <Button className="btn-primary">
+                Sign In
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -47,9 +46,11 @@ export default function Landing() {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button onClick={handleLogin} className="btn-primary">
-                  Start Creating <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                <Link href="/login">
+                    <Button className="btn-primary">
+                    Start Creating <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                </Link>
                 <Button variant="outline" className="btn-secondary">
                   Watch Demo <Play className="ml-2 h-4 w-4" />
                 </Button>
@@ -125,9 +126,11 @@ export default function Landing() {
           <p className="text-xl text-muted-foreground mb-8">
             Join thousands of entrepreneurs who are already using our AI-powered platform to build successful businesses.
           </p>
-          <Button onClick={handleLogin} size="lg" className="btn-primary">
-            Get Started Now <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <Link href="/login">
+            <Button size="lg" className="btn-primary">
+                Get Started Now <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
         </div>
       </section>
     </div>

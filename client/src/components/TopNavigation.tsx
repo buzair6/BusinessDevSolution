@@ -3,6 +3,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Lightbulb, Moon, Sun, Menu, LogOut } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 interface TopNavigationProps {
   onToggleSidebar: () => void;
@@ -11,9 +15,27 @@ interface TopNavigationProps {
 export function TopNavigation({ onToggleSidebar }: TopNavigationProps) {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+
+  const logoutMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/logout"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      navigate("/");
+      toast({ title: "Logged out successfully." });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to log out.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    logoutMutation.mutate();
   };
 
   return (
@@ -72,6 +94,7 @@ export function TopNavigation({ onToggleSidebar }: TopNavigationProps) {
                   size="sm"
                   onClick={handleLogout}
                   className="p-2 hover:bg-muted"
+                  disabled={logoutMutation.isPending}
                 >
                   <LogOut className="h-4 w-4 text-muted-foreground" />
                 </Button>

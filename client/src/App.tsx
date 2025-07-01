@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { useState, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -8,11 +8,11 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { TopNavigation } from "@/components/TopNavigation";
 import { Sidebar } from "@/components/Sidebar";
 import { useAuth } from "@/hooks/useAuth";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import { useToast } from "@/hooks/use-toast";
 
 // Pages
 import Landing from "@/pages/Landing";
+import LoginPage from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import SSDCTranscripts from "@/pages/SSDCTranscripts";
 import MarketSurvey from "@/pages/MarketSurvey";
@@ -63,20 +63,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to access this page.",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 1000);
-    }
-  }, [isAuthenticated, isLoading, toast]);
 
   if (isLoading) {
     return (
@@ -94,7 +80,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return null;
+    return <Redirect to="/login" />;
   }
 
   return <>{children}</>;
@@ -120,52 +106,54 @@ function Router() {
 
   return (
     <Switch>
-      {!isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
-        <>
-          <Route path="/">
-            <AppLayout>
-              <Dashboard />
-            </AppLayout>
-          </Route>
-          <Route path="/ssdc-transcripts">
-            <ProtectedRoute>
-              <AppLayout>
-                <SSDCTranscripts />
-              </AppLayout>
-            </ProtectedRoute>
-          </Route>
-          <Route path="/market-survey">
-            <ProtectedRoute>
-              <AppLayout>
-                <MarketSurvey />
-              </AppLayout>
-            </ProtectedRoute>
-          </Route>
-          <Route path="/business-forms">
-            <ProtectedRoute>
-              <AppLayout>
-                <BusinessForms />
-              </AppLayout>
-            </ProtectedRoute>
-          </Route>
-          <Route path="/create-form">
-            <ProtectedRoute>
-              <AppLayout>
-                <CreateForm />
-              </AppLayout>
-            </ProtectedRoute>
-          </Route>
-          <Route path="/admin">
-            <ProtectedRoute>
-              <AppLayout>
-                <AdminPanel />
-              </AppLayout>
-            </ProtectedRoute>
-          </Route>
-        </>
-      )}
+      <Route path="/login" component={LoginPage} />
+      <Route path="/">
+        {isAuthenticated ? <Redirect to="/dashboard" /> : <Landing />}
+      </Route>
+      
+      <Route path="/dashboard">
+        <ProtectedRoute>
+          <AppLayout>
+            <Dashboard />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/ssdc-transcripts">
+        <ProtectedRoute>
+          <AppLayout>
+            <SSDCTranscripts />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/market-survey">
+        <ProtectedRoute>
+          <AppLayout>
+            <MarketSurvey />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/business-forms">
+        <ProtectedRoute>
+          <AppLayout>
+            <BusinessForms />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/create-form">
+        <ProtectedRoute>
+          <AppLayout>
+            <CreateForm />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/admin">
+        <ProtectedRoute>
+          <AppLayout>
+            <AdminPanel />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+      
       <Route component={NotFound} />
     </Switch>
   );

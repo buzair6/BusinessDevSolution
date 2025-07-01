@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage-simple";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { storage } from "./storage";
+import { isAuthenticated } from "./auth";
 import { 
   insertSsdcTranscriptSchema,
   insertMarketSurveyDataSchema,
@@ -11,18 +11,12 @@ import {
 import { generateBusinessAdvice, analyzeBusinessIdea, refineBusinessConcept } from "./gemini";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+  app.get('/api/auth/user', (req, res) => {
+    if (req.user) {
+      res.json(req.user);
+    } else {
+      res.status(401).json({ message: "Unauthorized" });
     }
   });
 
@@ -57,10 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/ssdc-transcripts', isAuthenticated, async (req: any, res) => {
     try {
-      // Check if user is admin
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
@@ -75,9 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/ssdc-transcripts/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
@@ -93,9 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/ssdc-transcripts/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
@@ -125,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/market-survey-data', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const validatedData = insertMarketSurveyDataSchema.parse({
         ...req.body,
         uploadedBy: userId,
@@ -141,10 +128,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Business Forms routes
   app.get('/api/business-forms', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      // Admin can see all forms, users see only their own
       const forms = await storage.getBusinessForms(user?.isAdmin ? undefined : userId);
       res.json(forms);
     } catch (error) {
@@ -156,16 +142,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/business-forms/:id', isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const form = await storage.getBusinessForm(id);
       
       if (!form) {
         return res.status(404).json({ message: "Form not found" });
       }
 
-      const user = await storage.getUser(userId);
-      // Users can only access their own forms unless they're admin
-      if (form.userId !== userId && !user?.isAdmin) {
+      if (form.userId !== userId && !req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -178,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/business-forms', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const validatedData = insertBusinessFormSchema.parse({
         ...req.body,
         userId,
@@ -194,15 +178,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/business-forms/:id', isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const form = await storage.getBusinessForm(id);
       
       if (!form) {
         return res.status(404).json({ message: "Form not found" });
       }
 
-      const user = await storage.getUser(userId);
-      if (form.userId !== userId && !user?.isAdmin) {
+      if (form.userId !== userId && !req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -218,14 +201,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Chat routes
   app.post('/api/ai-chat', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { message, formId, context } = req.body;
 
       if (!message) {
         return res.status(400).json({ message: "Message is required" });
       }
 
-      // Get relevant context data
       const contextData = await Promise.all([
         storage.getSsdcTranscripts(),
         storage.getMarketSurveyData(),
@@ -234,15 +216,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const [transcripts, marketData, businessForm] = contextData;
 
-      // Generate AI response
       const aiResponse = await generateBusinessAdvice(message, {
-        transcripts: transcripts.slice(0, 5), // Limit for token efficiency
+        transcripts: transcripts.slice(0, 5),
         marketData: marketData.slice(0, 5),
         businessForm,
         context,
       });
 
-      // Save chat session
       const sessionData = {
         userId,
         formId: formId || null,
@@ -267,11 +247,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/ai-analyze-idea', isAuthenticated, async (req: any, res) => {
     try {
       const { businessIdea } = req.body;
-
       if (!businessIdea) {
         return res.status(400).json({ message: "Business idea is required" });
       }
-
       const analysis = await analyzeBusinessIdea(businessIdea);
       res.json({ analysis });
     } catch (error) {
@@ -283,11 +261,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/ai-refine-concept', isAuthenticated, async (req: any, res) => {
     try {
       const { concept, targetMarket, industry } = req.body;
-
       if (!concept) {
         return res.status(400).json({ message: "Business concept is required" });
       }
-
       const refinedConcept = await refineBusinessConcept(concept, targetMarket, industry);
       res.json({ refinedConcept });
     } catch (error) {
@@ -299,19 +275,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.post('/api/admin/create-user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
-
       const { id, email, firstName, lastName, isAdmin } = req.body;
-      
       if (!id || !email) {
         return res.status(400).json({ message: "ID and email are required" });
       }
-
       const newUser = await storage.upsertUser({
         id,
         email,
@@ -319,7 +289,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName,
         isAdmin: isAdmin || false,
       });
-
       res.status(201).json(newUser);
     } catch (error) {
       console.error("Error creating user:", error);

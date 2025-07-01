@@ -13,21 +13,24 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
-// Session storage table - mandatory for Replit Auth
+// Session storage table
 export const sessions = pgTable(
   "sessions",
   {
     sid: varchar("sid").primaryKey(),
     sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
+    expire: timestamp("expire", { withTimezone: true }).notNull(),
   },
-  (table) => [index("IDX_session_expire").on(table.expire)],
+  (table) => ({
+    expireIdx: index("IDX_session_expire").on(table.expire),
+  })
 );
 
-// User storage table - mandatory for Replit Auth
+// User storage table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
-  email: varchar("email").unique(),
+  email: varchar("email").unique().notNull(),
+  password: text("password"),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -164,3 +167,4 @@ export type BusinessForm = typeof businessForms.$inferSelect;
 export type InsertBusinessForm = z.infer<typeof insertBusinessFormSchema>;
 export type AiChatSession = typeof aiChatSessions.$inferSelect;
 export type InsertAiChatSession = z.infer<typeof insertAiChatSessionSchema>;
+
