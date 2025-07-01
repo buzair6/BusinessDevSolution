@@ -1,7 +1,12 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import { GoogleGenAI } from "@google/genai";
 
+const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
+
 const ai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "" 
+  apiKey: apiKey
 });
 
 interface BusinessAdviceContext {
@@ -58,7 +63,7 @@ export async function generateBusinessAdvice(
     const fullPrompt = `${systemPrompt}\n\n${contextString}\n\nUser Question: ${userMessage}\n\nProvide a helpful, specific response:`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       contents: fullPrompt,
     });
 
@@ -86,7 +91,7 @@ Please provide analysis in the following areas:
 Be specific and actionable in your feedback.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
+      model: "gemini-1.5-flash",
       contents: prompt,
     });
 
@@ -119,7 +124,7 @@ Please provide:
 Focus on making the concept more compelling and market-ready.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
     });
 
@@ -144,7 +149,7 @@ Provide specific, actionable suggestions that would make this business concept s
 Return as a simple array of strings, each suggestion should be concise and implementable.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
     });
 
