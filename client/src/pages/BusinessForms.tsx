@@ -9,7 +9,7 @@ import { FileText, Plus, Eye, Edit } from "lucide-react";
 export default function BusinessForms() {
   const { user } = useAuth();
 
-  const { data: forms, isLoading } = useQuery({
+  const { data: forms = [] as any[], isLoading } = useQuery<any[]>({
     queryKey: ["/api/business-forms"],
     enabled: true,
   });
