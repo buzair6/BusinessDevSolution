@@ -31,10 +31,12 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-    email: z.string().email({ message: "Invalid email address." }),
-    password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-    firstName: z.string().optional(),
-    lastName: z.string().optional(),
+  email: z.string().email({ message: "Invalid email address." }),
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters." }),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -59,24 +61,30 @@ export default function LoginPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       navigate("/");
-      toast({ title: "Success", description: `Successfully ${isLogin ? 'logged in' : 'registered'}.` });
+      toast({
+        title: "Success",
+        description: `Successfully ${isLogin ? "logged in" : "registered"}.`,
+      });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || `Failed to ${isLogin ? 'login' : 'register'}.`,
+        description:
+          error.message || `Failed to ${isLogin ? "login" : "register"}.`,
         variant: "destructive",
       });
     },
   };
 
   const loginMutation = useMutation({
-    mutationFn: (data: LoginFormValues) => apiRequest("POST", "/api/login", data),
+    mutationFn: (data: LoginFormValues) =>
+      apiRequest("POST", "/api/login", data),
     ...mutationOptions,
   });
 
   const registerMutation = useMutation({
-    mutationFn: (data: RegisterFormValues) => apiRequest("POST", "/api/register", data),
+    mutationFn: (data: RegisterFormValues) =>
+      apiRequest("POST", "/api/register", data),
     ...mutationOptions,
   });
 
@@ -95,15 +103,22 @@ export default function LoginPage() {
           <div className="mx-auto w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
             <Bot className="h-6 w-6 text-primary-foreground" />
           </div>
-          <CardTitle>{isLogin ? "Welcome Back" : "Create an Account"}</CardTitle>
+          <CardTitle>
+            {isLogin ? "Welcome Back" : "Create an Account"}
+          </CardTitle>
           <CardDescription>
-            {isLogin ? "Sign in to continue to your dashboard." : "The first user to register will be an admin."}
+            {isLogin
+              ? "Sign in to continue to your dashboard."
+              : "The first user to register will be an admin."}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLogin ? (
             <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={loginForm.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={loginForm.control}
                   name="email"
@@ -124,47 +139,58 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
+                        <Input
+                          type="password"
+                          placeholder="••••••••"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loginMutation.isPending}
+                >
                   {loginMutation.isPending ? "Signing In..." : "Sign In"}
                 </Button>
               </form>
             </Form>
           ) : (
-             <Form {...registerForm}>
-              <form onSubmit={registerForm.handleSubmit(onSubmit)} className="space-y-4">
+            <Form {...registerForm}>
+              <form
+                onSubmit={registerForm.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={registerForm.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="John" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Doe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <FormField
+                    control={registerForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
                 <FormField
                   control={registerForm.control}
@@ -186,14 +212,24 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
+                        <Input
+                          type="password"
+                          placeholder="••••••••"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                  {registerMutation.isPending ? "Creating Account..." : "Create Account"}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={registerMutation.isPending}
+                >
+                  {registerMutation.isPending
+                    ? "Creating Account..."
+                    : "Create Account"}
                 </Button>
               </form>
             </Form>
@@ -212,4 +248,4 @@ export default function LoginPage() {
       </Card>
     </div>
   );
-
+}
