@@ -129,7 +129,7 @@ export default function CreateForm() {
       return response.json();
     },
     onSuccess: (data) => {
-      setAiSuggestions(prev => ({
+      setAiSuggestions((prev: any) => ({
         ...prev,
         lastSuggestion: data.refinedConcept,
       }));

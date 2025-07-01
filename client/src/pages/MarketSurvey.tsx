@@ -35,9 +35,8 @@ export default function MarketSurvey() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const { data: marketData, isLoading } = useQuery({
-    queryKey: ["/api/market-survey-data", { industry: selectedIndustry, dataType: selectedDataType }],
-    enabled: true,
+  const { data: marketData = [] as any[], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/market-survey-data"],
   });
 
   const form = useForm<AddDataForm>({

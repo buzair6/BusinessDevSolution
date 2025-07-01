@@ -75,17 +75,17 @@ export default function AdminPanel() {
   }, [user, toast]);
 
   // Stats queries
-  const { data: businessForms } = useQuery({
+  const { data: businessForms = [] as any[] } = useQuery<any[]>({
     queryKey: ["/api/business-forms"],
     enabled: !!user?.isAdmin,
   });
 
-  const { data: transcripts } = useQuery({
+  const { data: transcripts = [] as any[] } = useQuery<any[]>({
     queryKey: ["/api/ssdc-transcripts"],
     enabled: !!user?.isAdmin,
   });
 
-  const { data: marketData } = useQuery({
+  const { data: marketData = [] as any[] } = useQuery<any[]>({
     queryKey: ["/api/market-survey-data"],
     enabled: !!user?.isAdmin,
   });
