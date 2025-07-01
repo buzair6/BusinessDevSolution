@@ -13,9 +13,8 @@ export default function SSDCTranscripts() {
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const { user } = useAuth();
 
-  const { data: transcripts, isLoading } = useQuery({
-    queryKey: ["/api/ssdc-transcripts", { search: searchTerm, industry: selectedIndustry }],
-    enabled: true,
+  const { data: transcripts = [] as any[], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/ssdc-transcripts"],
   });
 
   const industries = ["Technology", "Finance", "Healthcare", "E-commerce", "Education"];
