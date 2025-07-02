@@ -252,3 +252,88 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+// Seeding function for development
+export async function seedDatabase() {
+  try {
+    // Check if data already exists
+    const existingTranscripts = await db.select().from(ssdcTranscripts).limit(1);
+    const existingMarketData = await db.select().from(marketSurveyData).limit(1);
+    
+    if (existingTranscripts.length === 0) {
+      console.log("Seeding SSDC transcripts...");
+      await db.insert(ssdcTranscripts).values([
+        {
+          title: "Scaling Tech Startups in 2024",
+          intervieweeName: "Sarah Chen",
+          intervieweeRole: "CEO",
+          intervieweeCompany: "TechFlow Solutions",
+          industry: "Technology",
+          duration: 45,
+          content: "In today's rapidly evolving tech landscape, the key to scaling a startup successfully lies in three fundamental areas: product-market fit validation, strategic hiring, and maintaining operational efficiency. We've learned that premature scaling can be detrimental. At TechFlow, we focused on deeply understanding our customers' pain points before expanding our team or product features. The biggest mistake I see founders make is trying to scale before they have clear metrics showing consistent growth and customer satisfaction. Technology should solve real problems, not create fancy solutions looking for problems to solve.",
+          tags: ["scaling", "startup", "product-market-fit", "tech"],
+          imageUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&w=800&h=600&fit=crop",
+          profileImageUrl: "https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face"
+        },
+        {
+          title: "Building Sustainable Healthcare Solutions",
+          intervieweeName: "Dr. Michael Rodriguez",
+          intervieweeRole: "Founder & CEO",
+          intervieweeCompany: "HealthTech Innovations",
+          industry: "Healthcare",
+          duration: 52,
+          content: "The healthcare industry is ripe for disruption, but innovation must be approached with extreme care and regulatory awareness. Our journey at HealthTech Innovations taught us that the most successful healthcare startups focus on improving patient outcomes while reducing costs. We developed our telemedicine platform by first understanding the regulatory landscape, then building strong partnerships with healthcare providers. The key insight is that technology alone isn't enough - you need to understand the complex ecosystem of healthcare delivery, insurance, and patient care.",
+          tags: ["healthcare", "telemedicine", "regulation", "patient-outcomes"],
+          imageUrl: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&w=800&h=600&fit=crop",
+          profileImageUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face"
+        },
+        {
+          title: "E-commerce Evolution and Customer Experience",
+          intervieweeName: "Emma Johnson",
+          intervieweeRole: "CEO",
+          intervieweeCompany: "RetailNext",
+          industry: "E-commerce",
+          duration: 38,
+          content: "E-commerce has evolved far beyond just putting products online. Today's successful e-commerce businesses are focused on creating seamless, personalized customer experiences across all touchpoints. At RetailNext, we've learned that data-driven personalization, fast delivery, and exceptional customer service are non-negotiable. The future of e-commerce lies in understanding customer behavior patterns and predicting their needs before they even realize them. Social commerce and sustainability are becoming increasingly important factors in purchase decisions.",
+          tags: ["ecommerce", "customer-experience", "personalization", "data-driven"],
+          imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&w=800&h=600&fit=crop",
+          profileImageUrl: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&w=150&h=150&fit=crop&crop=face"
+        }
+      ]);
+    }
+
+    if (existingMarketData.length === 0) {
+      console.log("Seeding market survey data...");
+      await db.insert(marketSurveyData).values([
+        {
+          title: "Global AI Market Trends 2024",
+          source: "TechMarket Research",
+          industry: "Technology",
+          content: "The global artificial intelligence market is projected to reach $1.8 trillion by 2030, with a compound annual growth rate of 37.3%. Key growth drivers include increasing adoption of AI in healthcare, finance, and manufacturing sectors. Generative AI represents the fastest-growing segment, with enterprise adoption increasing by 156% year-over-year. Major challenges include data privacy concerns, regulatory compliance, and the need for skilled AI professionals.",
+          keyInsights: ["AI market to reach $1.8T by 2030", "37.3% CAGR expected", "Generative AI shows 156% YoY growth", "Healthcare and finance lead adoption"],
+          dataType: "trend",
+        },
+        {
+          title: "Sustainable Business Practices Survey",
+          source: "Green Business Institute",
+          industry: "Manufacturing",
+          content: "A comprehensive survey of 2,500 businesses reveals that 78% of companies are implementing sustainable practices to meet consumer demand and regulatory requirements. Companies investing in sustainability report 23% higher employee satisfaction and 19% improvement in brand perception. The biggest barriers to sustainability adoption are initial implementation costs (67%) and lack of clear ROI metrics (54%).",
+          keyInsights: ["78% of companies implementing sustainability", "23% higher employee satisfaction", "67% cite cost as barrier", "19% improvement in brand perception"],
+          dataType: "survey",
+        },
+        {
+          title: "Remote Work Impact on Productivity",
+          source: "Future of Work Research Center",
+          industry: "Technology",
+          content: "Analysis of productivity metrics from 1,200 companies shows that remote work has led to a 13% increase in overall productivity. However, creative collaboration has decreased by 8%, and employee burnout has increased by 11%. Companies with strong digital infrastructure and communication tools show 31% better remote work outcomes compared to those with traditional setups.",
+          keyInsights: ["13% productivity increase overall", "8% decrease in creative collaboration", "11% increase in burnout", "Digital infrastructure crucial for success"],
+          dataType: "analysis",
+        }
+      ]);
+    }
+
+    console.log("Database seeding completed successfully");
+  } catch (error) {
+    console.error("Error seeding database:", error);
+  }
+}

@@ -5,6 +5,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupAuth } from "./auth";
 import { setupVite, serveStatic, log } from "./vite";
+import { seedDatabase } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -42,6 +43,12 @@ app.use((req, res, next) => {
 
 (async () => {
   await setupAuth(app);
+  
+  // Seed database in development
+  if (process.env.NODE_ENV === "development") {
+    seedDatabase();
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

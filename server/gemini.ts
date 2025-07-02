@@ -9,6 +9,8 @@ const ai = new GoogleGenAI({
   apiKey: apiKey
 });
 
+const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+
 interface BusinessAdviceContext {
   transcripts?: any[];
   marketData?: any[];
@@ -17,60 +19,72 @@ interface BusinessAdviceContext {
 }
 
 export async function generateBusinessAdvice(
-  userMessage: string, 
-  context: BusinessAdviceContext
+  userMessage: string,
+  context?: {
+    transcripts?: any[];
+    marketData?: any[];
+    businessForm?: any;
+    context?: any;
+  }
 ): Promise<string> {
   try {
-    const systemPrompt = `You are an expert business advisor with access to industry insights, market data, and CEO interviews. 
-    You help entrepreneurs refine their business ideas and provide actionable advice.
+    // Build context from available data
+    let contextPrompt = "";
     
-    Available context:
-    ${context.transcripts ? `- SSDC Interview insights from ${context.transcripts.length} industry leaders` : ''}
-    ${context.marketData ? `- Market research data from ${context.marketData.length} sources` : ''}
-    ${context.businessForm ? `- Current business form: ${context.businessForm.title}` : ''}
-    
-    Provide specific, actionable advice based on the available data. Reference relevant market trends, 
-    successful business strategies from the interviews, and practical next steps.`;
-
-    let contextString = "";
-    
-    if (context.transcripts && context.transcripts.length > 0) {
-      contextString += "\n\nRelevant SSDC Interview Insights:\n";
+    if (context?.transcripts && context.transcripts.length > 0) {
+      contextPrompt += "\n\nSSDC EXPERT INSIGHTS:\n";
       context.transcripts.forEach((transcript, index) => {
-        contextString += `${index + 1}. ${transcript.intervieweeName} (${transcript.industry}): ${transcript.content.substring(0, 200)}...\n`;
+        contextPrompt += `${index + 1}. ${transcript.intervieweeName} (${transcript.intervieweeRole} at ${transcript.intervieweeCompany || 'Company'}):
+"${transcript.content.substring(0, 300)}..."
+Key Tags: ${transcript.tags?.join(', ') || 'N/A'}
+Industry: ${transcript.industry}\n\n`;
       });
     }
-    
-    if (context.marketData && context.marketData.length > 0) {
-      contextString += "\n\nRelevant Market Data:\n";
+
+    if (context?.marketData && context.marketData.length > 0) {
+      contextPrompt += "\n\nMARKET INTELLIGENCE:\n";
       context.marketData.forEach((data, index) => {
-        contextString += `${index + 1}. ${data.title} (${data.industry}): ${data.content.substring(0, 200)}...\n`;
-        if (data.keyInsights && data.keyInsights.length > 0) {
-          contextString += `   Key insights: ${data.keyInsights.slice(0, 2).join(', ')}\n`;
-        }
+        contextPrompt += `${index + 1}. ${data.title} (${data.industry}):
+${data.content.substring(0, 200)}...
+Key Insights: ${data.keyInsights?.join(', ') || 'N/A'}
+Data Type: ${data.dataType}\n\n`;
       });
     }
-    
-    if (context.businessForm) {
-      contextString += "\n\nCurrent Business Form:\n";
-      contextString += `Title: ${context.businessForm.title}\n`;
-      if (context.businessForm.industry) contextString += `Industry: ${context.businessForm.industry}\n`;
-      if (context.businessForm.problemStatement) contextString += `Problem: ${context.businessForm.problemStatement}\n`;
-      if (context.businessForm.targetMarket) contextString += `Target Market: ${context.businessForm.targetMarket}\n`;
-      if (context.businessForm.revenueModel) contextString += `Revenue Model: ${context.businessForm.revenueModel}\n`;
+
+    if (context?.businessForm) {
+      contextPrompt += "\n\nCURRENT BUSINESS CONTEXT:\n";
+      contextPrompt += `Business: ${context.businessForm.title || 'Unnamed Business'}
+Industry: ${context.businessForm.industry || 'Not specified'}
+Problem Statement: ${context.businessForm.problemStatement || 'Not provided'}
+Target Market: ${context.businessForm.targetMarket || 'Not defined'}
+Revenue Model: ${context.businessForm.revenueModel || 'Not selected'}\n\n`;
     }
 
-    const fullPrompt = `${systemPrompt}\n\n${contextString}\n\nUser Question: ${userMessage}\n\nProvide a helpful, specific response:`;
+    const prompt = `You are an expert business advisor with access to insights from top CEOs and current market intelligence. 
 
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: fullPrompt,
-    });
+${contextPrompt}
 
-    return response.text || "I'm sorry, I couldn't generate a response at this time. Please try again.";
+Based on the above context and your expertise, please provide detailed, actionable advice for the following query:
+
+USER QUERY: ${userMessage}
+
+INSTRUCTIONS:
+1. Reference specific insights from the SSDC interviews when relevant
+2. Incorporate market data and trends that apply to the user's situation
+3. Provide concrete, actionable recommendations
+4. If the user has a business form in progress, tailor advice specifically to their business
+5. Use a professional but approachable tone
+6. Structure your response clearly with key points
+7. If relevant data is limited, acknowledge this and provide general best practices
+
+Please provide comprehensive business guidance:`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
   } catch (error) {
     console.error("Error generating business advice:", error);
-    throw new Error("Failed to generate AI response. Please check your API configuration.");
+    throw new Error("Failed to generate business advice");
   }
 }
 
@@ -90,12 +104,9 @@ Please provide analysis in the following areas:
 
 Be specific and actionable in your feedback.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: prompt,
-    });
-
-    return response.text || "Unable to analyze the business idea at this time.";
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || "Unable to analyze the business idea at this time.";
   } catch (error) {
     console.error("Error analyzing business idea:", error);
     throw new Error("Failed to analyze business idea.");
@@ -123,12 +134,9 @@ Please provide:
 
 Focus on making the concept more compelling and market-ready.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: prompt,
-    });
-
-    return response.text || "Unable to refine the business concept at this time.";
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || "Unable to refine the business concept at this time.";
   } catch (error) {
     console.error("Error refining business concept:", error);
     throw new Error("Failed to refine business concept.");
@@ -148,12 +156,9 @@ ${JSON.stringify(currentFormData, null, 2)}
 Provide specific, actionable suggestions that would make this business concept stronger. 
 Return as a simple array of strings, each suggestion should be concise and implementable.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: prompt,
-    });
-
-    const text = response.text || "";
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text() || "";
     
     // Parse suggestions from the response
     const suggestions = text

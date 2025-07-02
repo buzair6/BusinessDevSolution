@@ -503,7 +503,7 @@ export default function AdminPanel() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Industry *</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select industry" />
@@ -545,24 +545,10 @@ export default function AdminPanel() {
                             <FormLabel>Content *</FormLabel>
                             <FormControl>
                               <Textarea 
-                                rows={6}
                                 placeholder="Interview transcript content..."
+                                rows={8}
                                 {...field} 
                               />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={transcriptForm.control}
-                        name="tags"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tags (comma-separated)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="AI, Scaling, Investment" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -572,12 +558,12 @@ export default function AdminPanel() {
                       <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={transcriptForm.control}
-                          name="imageUrl"
+                          name="tags"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Image URL</FormLabel>
+                              <FormLabel>Tags (comma separated)</FormLabel>
                               <FormControl>
-                                <Input type="url" placeholder="https://..." {...field} />
+                                <Input placeholder="scaling, startup, tech" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -586,18 +572,32 @@ export default function AdminPanel() {
 
                         <FormField
                           control={transcriptForm.control}
-                          name="profileImageUrl"
+                          name="imageUrl"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Profile Image URL</FormLabel>
+                              <FormLabel>Image URL</FormLabel>
                               <FormControl>
-                                <Input type="url" placeholder="https://..." {...field} />
+                                <Input placeholder="https://..." {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
                       </div>
+
+                      <FormField
+                        control={transcriptForm.control}
+                        name="profileImageUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Profile Image URL</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
                       <div className="flex space-x-4 pt-4">
                         <Button 
@@ -622,56 +622,87 @@ export default function AdminPanel() {
               </Dialog>
             </div>
 
-            {/* Content Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Content Tables */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* SSDC Transcripts */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Mic className="h-5 w-5 mr-2" />
-                    SSDC Transcripts
+                    SSDC Transcripts ({transcripts.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-foreground mb-2">
-                    {transcripts?.length || 0}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Expert interviews and insights
-                  </p>
+                  {transcripts.length > 0 ? (
+                    <div className="space-y-3">
+                      {transcripts.slice(0, 5).map((transcript: any) => (
+                        <div key={transcript.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{transcript.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {transcript.intervieweeName} • {transcript.industry}
+                            </p>
+                          </div>
+                          <div className="flex space-x-1">
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {transcripts.length > 5 && (
+                        <p className="text-xs text-muted-foreground text-center pt-2">
+                          And {transcripts.length - 5} more...
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No transcripts added yet</p>
+                  )}
                 </CardContent>
               </Card>
 
+              {/* Market Data */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <TrendingUp className="h-5 w-5 mr-2" />
-                    Market Data
+                    Market Data ({marketData.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-foreground mb-2">
-                    {marketData?.length || 0}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Market research and trends
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <FileText className="h-5 w-5 mr-2" />
-                    Business Forms
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold text-foreground mb-2">
-                    {businessForms?.length || 0}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    User-generated forms
-                  </p>
+                  {marketData.length > 0 ? (
+                    <div className="space-y-3">
+                      {marketData.slice(0, 5).map((data: any) => (
+                        <div key={data.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{data.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {data.industry} • {data.dataType}
+                            </p>
+                          </div>
+                          <div className="flex space-x-1">
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {marketData.length > 5 && (
+                        <p className="text-xs text-muted-foreground text-center pt-2">
+                          And {marketData.length - 5} more...
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No market data added yet</p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -680,37 +711,59 @@ export default function AdminPanel() {
           <TabsContent value="settings" className="space-y-6">
             <h2 className="text-xl font-semibold text-foreground">System Settings</h2>
             
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Settings className="h-5 w-5 mr-2" />
-                  AI Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">Gemini API Status</h4>
-                      <p className="text-sm text-muted-foreground">Current AI service status</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Database Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">SSDC Transcripts</span>
+                      <Badge variant="outline">{transcripts.length}</Badge>
                     </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                      Active
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">Database Status</h4>
-                      <p className="text-sm text-muted-foreground">PostgreSQL connection</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Market Data</span>
+                      <Badge variant="outline">{marketData.length}</Badge>
                     </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                      Connected
-                    </Badge>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Business Forms</span>
+                      <Badge variant="outline">{businessForms.length}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Active Users</span>
+                      <Badge variant="outline">
+                        {businessForms ? new Set(businessForms.map((f: any) => f.userId)).size : 0}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>AI Integration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Gemini AI Status</span>
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                        Active
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Chat Sessions</span>
+                      <Badge variant="outline">Active</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Business Analysis</span>
+                      <Badge variant="outline">Available</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
