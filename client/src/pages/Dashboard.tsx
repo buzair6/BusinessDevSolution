@@ -20,12 +20,16 @@ export default function Dashboard() {
 
   const { data: recentForms } = useQuery({
     queryKey: ["/api/business-forms"],
-    select: (data: any[]) => data.slice(0, 3),
+    // Fix: Safely handle data by checking if it exists before slicing.
+    // Provide a default empty array to prevent errors.
+    select: (data: any[] | undefined) => (data ? data.slice(0, 3) : []),
   });
 
   const { data: marketInsights } = useQuery({
     queryKey: ["/api/market-survey-data"],
-    select: (data: any[]) => data.slice(0, 2),
+    // Fix: Safely handle data by checking if it exists before slicing.
+    // Provide a default empty array to prevent errors.
+    select: (data: any[] | undefined) => (data ? data.slice(0, 2) : []),
   });
 
   return (
