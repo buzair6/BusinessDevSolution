@@ -1,8 +1,8 @@
-import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
-export default defineConfig({
+// The `defineConfig` wrapper has been removed to ensure a clean default export.
+export default {
   plugins: [
     react(),
   ],
@@ -19,15 +19,9 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:5000",
-        changeOrigin: true,
-      },
-    },
     fs: {
       strict: true,
       deny: ["**/.*"],
     },
   },
-});
+};
