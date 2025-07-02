@@ -1,8 +1,8 @@
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { defineConfig } from "vite";
 
-// The `defineConfig` wrapper has been removed to ensure a clean default export.
-export default {
+export default defineConfig({
   plugins: [
     react(),
   ],
@@ -24,4 +24,4 @@ export default {
       deny: ["**/.*"],
     },
   },
-};
+});
