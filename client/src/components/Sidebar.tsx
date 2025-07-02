@@ -32,7 +32,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }, []);
 
   const navigationItems = [
-    { href: "/", icon: Home, label: "Dashboard", active: location === "/" },
+    { href: "/dashboard", icon: Home, label: "Dashboard", active: location === "/dashboard" },
     { href: "/ssdc-transcripts", icon: Mic, label: "SSDC Transcripts", active: location === "/ssdc-transcripts" },
     { href: "/market-survey", icon: TrendingUp, label: "Market Survey", active: location === "/market-survey" },
     { href: "/business-forms", icon: FileText, label: "Business Forms", active: location === "/business-forms" },
