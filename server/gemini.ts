@@ -1,15 +1,31 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { GoogleGenAI } from "@google/genai";
-
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
 
-const ai = new GoogleGenAI({ 
-  apiKey: apiKey
-});
+// Temporary fallback while resolving import issues
+let genAI: any = null;
+let model: any = null;
 
-const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+async function initializeAI() {
+  try {
+    if (!apiKey) {
+      console.warn("Warning: No Gemini API key found. AI features will use fallback responses.");
+      return;
+    }
+    
+    // Try dynamic import
+    const { GoogleGenAI } = await import("@google/genai");
+    genAI = new GoogleGenAI({ apiKey });
+    model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    console.log("AI initialization successful");
+  } catch (error: any) {
+    console.warn("AI initialization failed, using fallback responses:", error?.message || error);
+  }
+}
+
+// Initialize AI on module load
+initializeAI();
 
 interface BusinessAdviceContext {
   transcripts?: any[];
@@ -28,6 +44,10 @@ export async function generateBusinessAdvice(
   }
 ): Promise<string> {
   try {
+    if (!model) {
+      return generateFallbackAdvice(userMessage, context);
+    }
+
     // Build context from available data
     let contextPrompt = "";
     
@@ -84,11 +104,58 @@ Please provide comprehensive business guidance:`;
     return response.text();
   } catch (error) {
     console.error("Error generating business advice:", error);
-    throw new Error("Failed to generate business advice");
+    return generateFallbackAdvice(userMessage, context);
   }
 }
 
+function generateFallbackAdvice(userMessage: string, context?: any): string {
+  let advice = `Thank you for your question: "${userMessage}"\n\n`;
+  
+  advice += "**Business Development Guidance:**\n\n";
+  
+  if (context?.businessForm) {
+    advice += `I see you're working on "${context.businessForm.title || 'your business concept'}" in the ${context.businessForm.industry || 'business'} space.\n\n`;
+  }
+  
+  advice += "Here are some general recommendations:\n\n";
+  advice += "1. **Validate Your Market**: Conduct customer interviews to validate demand\n";
+  advice += "2. **Define Your Value Proposition**: Clearly articulate what makes you unique\n";
+  advice += "3. **Start Small**: Begin with a minimum viable product (MVP)\n";
+  advice += "4. **Focus on Customer Acquisition**: Develop a clear go-to-market strategy\n";
+  advice += "5. **Monitor Key Metrics**: Track progress with relevant KPIs\n\n";
+  
+  if (context?.transcripts?.length > 0) {
+    advice += `**Insights from Industry Leaders:**\n`;
+    advice += `Based on insights from ${context.transcripts.length} CEO interviews, focus on product-market fit and sustainable growth.\n\n`;
+  }
+  
+  if (context?.marketData?.length > 0) {
+    advice += `**Market Intelligence:**\n`;
+    advice += `Current market data suggests opportunities in emerging trends and customer pain points.\n\n`;
+  }
+  
+  advice += "*Note: AI features are currently in fallback mode. Please check the system configuration for full AI capabilities.*";
+  
+  return advice;
+}
+
 export async function analyzeBusinessIdea(businessIdea: string): Promise<string> {
+  if (!model) {
+    return `**Business Idea Analysis:**
+
+**Your Idea:** ${businessIdea}
+
+**Initial Assessment:**
+1. **Market Opportunity**: Research the total addressable market size
+2. **Target Customers**: Define your ideal customer profile clearly
+3. **Competitive Landscape**: Identify direct and indirect competitors
+4. **Revenue Potential**: Explore different monetization strategies
+5. **Key Challenges**: Consider barriers to entry and scaling challenges
+6. **Next Steps**: Start with customer validation and MVP development
+
+*Note: This is a basic analysis. Full AI analysis is currently unavailable.*`;
+  }
+
   try {
     const prompt = `As a business expert, analyze this business idea and provide structured feedback:
 
@@ -109,7 +176,7 @@ Be specific and actionable in your feedback.`;
     return response.text() || "Unable to analyze the business idea at this time.";
   } catch (error) {
     console.error("Error analyzing business idea:", error);
-    throw new Error("Failed to analyze business idea.");
+    return "I'm having trouble analyzing your business idea right now. Please try again later.";
   }
 }
 
@@ -118,6 +185,23 @@ export async function refineBusinessConcept(
   targetMarket?: string, 
   industry?: string
 ): Promise<string> {
+  if (!model) {
+    return `**Business Concept Refinement:**
+
+**Original Concept:** ${concept}
+${targetMarket ? `**Target Market:** ${targetMarket}` : ''}
+${industry ? `**Industry:** ${industry}` : ''}
+
+**Refinement Suggestions:**
+1. **Problem Statement**: Be more specific about the exact problem you're solving
+2. **Value Proposition**: Clearly state the unique benefit you provide
+3. **Target Customer**: Narrow down to a specific customer segment
+4. **Business Model**: Consider subscription, marketplace, or direct sales models
+5. **Differentiation**: Identify what makes you unique in the market
+
+*Note: Full AI refinement is currently unavailable.*`;
+  }
+
   try {
     const prompt = `Help refine this business concept with specific improvements:
 
@@ -139,7 +223,7 @@ Focus on making the concept more compelling and market-ready.`;
     return response.text() || "Unable to refine the business concept at this time.";
   } catch (error) {
     console.error("Error refining business concept:", error);
-    throw new Error("Failed to refine business concept.");
+    return "I'm having trouble refining your concept right now. Please try again later.";
   }
 }
 
@@ -147,6 +231,16 @@ export async function generateFormSuggestions(
   currentFormData: any,
   fieldName: string
 ): Promise<string[]> {
+  if (!model) {
+    return [
+      "Be more specific about your target customer",
+      "Research your competition thoroughly",
+      "Validate your assumptions with real customers",
+      "Consider different revenue models",
+      "Focus on your unique value proposition"
+    ];
+  }
+
   try {
     const prompt = `Based on this business form data, suggest 3-5 improvements for the "${fieldName}" field:
 
@@ -163,9 +257,9 @@ Return as a simple array of strings, each suggestion should be concise and imple
     // Parse suggestions from the response
     const suggestions = text
       .split('\n')
-      .filter(line => line.trim())
-      .map(line => line.replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, '').trim())
-      .filter(suggestion => suggestion.length > 10)
+      .filter((line: string) => line.trim())
+      .map((line: string) => line.replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, '').trim())
+      .filter((suggestion: string) => suggestion.length > 10)
       .slice(0, 5);
 
     return suggestions.length > 0 ? suggestions : [
