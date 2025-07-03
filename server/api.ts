@@ -2,7 +2,7 @@ import { Router } from "express";
 import passport from "./auth";
 import { isAuthenticated } from "./auth";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
+import { User } from "../shared/schema.js";
 import type { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 
