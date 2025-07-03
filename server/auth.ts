@@ -2,22 +2,23 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import session from "express-session";
 import type { Express, Request, Response, NextFunction, RequestHandler } from "express";
-import connectPg from "connect-pg-simple";
+// import connectPg from "connect-pg-simple"; // Temporarily removed for debugging
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { pool } from "./db";
+// import { pool } from "./db"; // Temporarily removed for debugging
 import { User } from "@shared/schema";
 import { log } from "./vite";
 
 const saltRounds = 10;
 
 export async function setupAuth(app: Express) {
-  const PgStore = connectPg(session);
-  const sessionStore = new PgStore({
-    pool: pool,
-    createTableIfMissing: true,
-    tableName: "sessions",
-  });
+  // --- Temporarily using default MemoryStore for debugging ---
+  // const PgStore = connectPg(session);
+  // const sessionStore = new PgStore({
+  //   pool: pool,
+  //   createTableIfMissing: true,
+  //   tableName: "sessions",
+  // });
 
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
@@ -27,7 +28,7 @@ export async function setupAuth(app: Express) {
 
   app.use(
     session({
-      store: sessionStore,
+      // store: sessionStore, // Using default MemoryStore
       secret: sessionSecret,
       resave: false,
       saveUninitialized: false,
