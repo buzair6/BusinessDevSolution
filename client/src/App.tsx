@@ -20,6 +20,7 @@ const BusinessForms = lazy(() => import("@/pages/BusinessForms"));
 const CreateForm = lazy(() => import("@/pages/CreateForm"));
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 const NotFound = lazy(() => import("@/pages/not-found"));
+const TestError = lazy(() => import("@/pages/TestError"));
 
 /**
  * Main application layout for authenticated users.
@@ -58,6 +59,7 @@ function App() {
           <Route path="/business-forms" component={BusinessForms} />
           <Route path="/create-form" component={CreateForm} />
           <Route path="/admin" component={AdminPanel} />
+          <Route path="/error-test" component={TestError} />
           
           {/* Redirect root and login to dashboard if already authenticated */}
           <Route path="/">
@@ -82,6 +84,7 @@ function App() {
         <Route path="/:rest*">
           <Landing />
         </Route>
+        <Route path="/error-test" component={TestError} />
       </Switch>
     </Suspense>
   );
