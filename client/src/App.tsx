@@ -1,32 +1,20 @@
-import { Switch, Route, Redirect } from "wouter";
-import { Suspense, lazy } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import React from 'react';
 
-const LoginPage = lazy(() => import("@/pages/Login"));
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
-
+/**
+ * A minimal component to verify that the React app is rendering.
+ * It has no dependencies on routing or authentication hooks.
+ */
 function App() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
-
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading page...</div>}>
-      <Switch>
-        <Route path="/login">
-          {isAuthenticated ? <Redirect to="/" /> : <LoginPage />}
-        </Route>
-        <Route path="/:rest*">
-          {isAuthenticated ? <Dashboard /> : <Redirect to="/login" />}
-        </Route>
-      </Switch>
-    </Suspense>
+    <div className="min-h-screen bg-muted/40 flex flex-col items-center justify-center p-4 text-center">
+      <h1 className="text-3xl font-bold text-foreground mb-2">It's Working!</h1>
+      <p className="text-lg text-muted-foreground">
+        The basic React application is now rendering correctly.
+      </p>
+      <p className="mt-4 text-sm text-muted-foreground">
+        We can now proceed to add back the login and dashboard functionality.
+      </p>
+    </div>
   );
 }
 
