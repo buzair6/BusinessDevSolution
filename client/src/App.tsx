@@ -36,3 +36,55 @@ const getQueryFn = ({ queryKey }: { queryKey: readonly unknown[] }) => {
         return res.json();
     });
 };
+
+// Define the App component and add "export default"
+export default function App() {
+  // The rest of your App component's code would go here.
+  // Since it's not provided in the file, I'll add a placeholder.
+  const { data: user, isLoading } = useQuery({ 
+    queryKey: ['/api/auth/user'],
+    queryFn: getQueryFn
+  });
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  return user ? <Dashboard /> : <LoginPage />;
+}
+
+// You would also need to define or import Dashboard and LoginPage components.
+// For the purpose of fixing the export, I will add placeholder components here.
+
+function Dashboard() {
+  const { data: user } = useQuery<{firstName: string, email: string}>({ queryKey: ['/api/auth/user'], queryFn: getQueryFn });
+
+  const { toast } = useToast();
+
+  const logoutMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/logout", {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({ title: "Logged out successfully." });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to log out.",
+        variant: "destructive",
+      });
+    },
+  });
+
+
+  return (
+    <div>
+      <h1>Welcome, {user?.firstName || user?.email}</h1>
+      <Button onClick={() => logoutMutation.mutate()}>Log Out</Button>
+    </div>
+  );
+}
+
+function LoginPage() {
+  return <h1>Please log in</h1>;
+}
