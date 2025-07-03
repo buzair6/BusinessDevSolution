@@ -10,7 +10,7 @@ interface State {
 }
 
 class ErrorBoundary extends React.Component<Props, State> {
-  public state!: Readonly<State>;
+  public state: State;
 
   constructor(props: Props) {
     super(props);
