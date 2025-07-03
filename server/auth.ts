@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { pool } from "./db";
 import { User } from "@shared/schema";
+import { log } from "./vite";
 
 const saltRounds = 10;
 
@@ -18,10 +19,16 @@ export async function setupAuth(app: Express) {
     tableName: "sessions",
   });
 
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    log("SESSION_SECRET is not set. Please add it to your .env file for security.", "error");
+    throw new Error("SESSION_SECRET is not set in the environment. Please add it to your .env file for security.");
+  }
+
   app.use(
     session({
       store: sessionStore,
-      secret: process.env.SESSION_SECRET || "a-secret-key-for-sessions",
+      secret: sessionSecret,
       resave: false,
       saveUninitialized: false,
       cookie: {
