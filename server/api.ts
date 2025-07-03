@@ -1,26 +1,91 @@
-import type { Express } from "express";
-import { createServer, type Server } from "http";
+import { Router } from "express";
+import passport from "passport";
+import { isAuthenticated } from "./auth";
 import { storage } from "./storage";
-import { isAuthenticated } from "./auth"; // Import isAuthenticated
 import { 
   insertSsdcTranscriptSchema,
   insertMarketSurveyDataSchema,
   insertBusinessFormSchema,
-  insertAiChatSessionSchema,
   User 
 } from "@shared/schema";
 import { generateBusinessAdvice, analyzeBusinessIdea, refineBusinessConcept } from "./gemini";
+import type { Request, Response, NextFunction } from "express";
+import bcrypt from "bcryptjs";
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth routes - now protected and secure
-  app.get('/api/auth/user', isAuthenticated, (req, res) => {
-    // req.user is guaranteed to be present by isAuthenticated middleware
+const apiRouter = Router();
+const saltRounds = 10;
+
+// --- Authentication Routes ---
+
+apiRouter.post("/register", async (req, res, next) => {
+    const { email, password, firstName, lastName } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required." });
+    }
+
+    try {
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: "User already exists." });
+      }
+
+      const userCount = await storage.getUserCount();
+      const isAdmin = userCount === 0;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+      const newUser = await storage.upsertUser({
+        id: crypto.randomUUID(),
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        isAdmin,
+      });
+
+      req.login(newUser, (err) => {
+        if (err) return next(err);
+        const { password, ...userWithoutPassword } = newUser;
+        res.status(201).json(userWithoutPassword);
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Error registering user" });
+    }
+});
+
+apiRouter.post("/login", (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate("local", (err: Error | null, user: User | false, info: { message: string }) => {
+      if (err) return next(err);
+      if (!user) return res.status(401).json({ message: info.message || "Login failed" });
+      
+      req.login(user, (err) => {
+        if (err) return next(err);
+        const { password, ...userWithoutPassword } = user;
+        return res.json(userWithoutPassword);
+      });
+    })(req, res, next);
+});
+
+apiRouter.post("/logout", (req, res, next) => {
+    req.logout((err) => {
+      if (err) return next(err);
+      req.session.destroy((err) => {
+        if (err) return next(err);
+        res.clearCookie('connect.sid');
+        res.status(200).json({ message: "Logged out successfully" });
+      });
+    });
+});
+
+apiRouter.get('/auth/user', isAuthenticated, (req, res) => {
     const { password, ...userWithoutPassword } = req.user as User;
     res.json(userWithoutPassword);
-  });
+});
 
-  // SSDC Transcripts routes
-  app.get('/api/ssdc-transcripts', async (req, res) => {
+
+// --- SSDC Transcripts Routes ---
+
+apiRouter.get('/ssdc-transcripts', async (req, res) => {
     try {
       const { industry, search } = req.query;
       const transcripts = await storage.getSsdcTranscripts({
@@ -32,28 +97,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching SSDC transcripts:", error);
       res.status(500).json({ message: "Failed to fetch transcripts" });
     }
-  });
+});
 
-  app.get('/api/ssdc-transcripts/:id', async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const transcript = await storage.getSsdcTranscript(id);
-      if (!transcript) {
-        return res.status(404).json({ message: "Transcript not found" });
-      }
-      res.json(transcript);
-    } catch (error) {
-      console.error("Error fetching SSDC transcript:", error);
-      res.status(500).json({ message: "Failed to fetch transcript" });
-    }
-  });
-
-  app.post('/api/ssdc-transcripts', isAuthenticated, async (req: any, res) => {
+apiRouter.post('/ssdc-transcripts', isAuthenticated, async (req: any, res) => {
     try {
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
-
       const validatedData = insertSsdcTranscriptSchema.parse(req.body);
       const transcript = await storage.createSsdcTranscript(validatedData);
       res.status(201).json(transcript);
@@ -61,41 +111,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error creating SSDC transcript:", error);
       res.status(500).json({ message: "Failed to create transcript" });
     }
-  });
+});
 
-  app.put('/api/ssdc-transcripts/:id', isAuthenticated, async (req: any, res) => {
-    try {
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
+// --- Market Survey Data Routes ---
 
-      const id = parseInt(req.params.id);
-      const validatedData = insertSsdcTranscriptSchema.partial().parse(req.body);
-      const transcript = await storage.updateSsdcTranscript(id, validatedData);
-      res.json(transcript);
-    } catch (error) {
-      console.error("Error updating SSDC transcript:", error);
-      res.status(500).json({ message: "Failed to update transcript" });
-    }
-  });
-
-  app.delete('/api/ssdc-transcripts/:id', isAuthenticated, async (req: any, res) => {
-    try {
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
-      const id = parseInt(req.params.id);
-      await storage.deleteSsdcTranscript(id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting SSDC transcript:", error);
-      res.status(500).json({ message: "Failed to delete transcript" });
-    }
-  });
-
-  // Market Survey Data routes
-  app.get('/api/market-survey-data', async (req, res) => {
+apiRouter.get('/market-survey-data', async (req, res) => {
     try {
       const { industry, dataType } = req.query;
       const data = await storage.getMarketSurveyData({
@@ -107,50 +127,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching market survey data:", error);
       res.status(500).json({ message: "Failed to fetch market data" });
     }
-  });
+});
 
-  app.post('/api/market-survey-data', isAuthenticated, async (req: any, res) => {
+apiRouter.post('/market-survey-data', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const validatedData = insertMarketSurveyDataSchema.parse({
-        ...req.body,
-        uploadedBy: userId,
-      });
+      const validatedData = insertMarketSurveyDataSchema.parse({ ...req.body, uploadedBy: userId });
       const data = await storage.createMarketSurveyData(validatedData);
       res.status(201).json(data);
     } catch (error) {
       console.error("Error creating market survey data:", error);
       res.status(500).json({ message: "Failed to create market data" });
     }
-  });
+});
 
-  // Business Forms routes
-  app.get('/api/business-forms', isAuthenticated, async (req: any, res) => {
+
+// --- Business Forms Routes ---
+
+apiRouter.get('/business-forms', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
-      
       const forms = await storage.getBusinessForms(user?.isAdmin ? undefined : userId);
       res.json(forms);
     } catch (error) {
       console.error("Error fetching business forms:", error);
       res.status(500).json({ message: "Failed to fetch forms" });
     }
-  });
+});
 
-  app.get('/api/business-forms/:id', isAuthenticated, async (req: any, res) => {
+apiRouter.get('/business-forms/:id', isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const userId = req.user.id;
       const form = await storage.getBusinessForm(id);
       
-      if (!form) {
-        return res.status(404).json({ message: "Form not found" });
-      }
-
-      if (form.userId !== userId && !req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied" });
-      }
+      if (!form) return res.status(404).json({ message: "Form not found" });
+      if (form.userId !== userId && !req.user?.isAdmin) return res.status(403).json({ message: "Access denied" });
 
       res.json(form);
     } catch (error) {
@@ -159,34 +172,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/business-forms', isAuthenticated, async (req: any, res) => {
+apiRouter.post('/business-forms', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const validatedData = insertBusinessFormSchema.parse({
-        ...req.body,
-        userId,
-      });
+      const validatedData = insertBusinessFormSchema.parse({ ...req.body, userId });
       const form = await storage.createBusinessForm(validatedData);
       res.status(201).json(form);
     } catch (error) {
       console.error("Error creating business form:", error);
       res.status(500).json({ message: "Failed to create form" });
     }
-  });
+});
 
-  app.put('/api/business-forms/:id', isAuthenticated, async (req: any, res) => {
+apiRouter.put('/business-forms/:id', isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const userId = req.user.id;
       const form = await storage.getBusinessForm(id);
       
-      if (!form) {
-        return res.status(404).json({ message: "Form not found" });
-      }
-
-      if (form.userId !== userId && !req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied" });
-      }
+      if (!form) return res.status(404).json({ message: "Form not found" });
+      if (form.userId !== userId && !req.user?.isAdmin) return res.status(403).json({ message: "Access denied" });
 
       const validatedData = insertBusinessFormSchema.partial().parse(req.body);
       const updatedForm = await storage.updateBusinessForm(id, validatedData);
@@ -195,106 +200,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error updating business form:", error);
       res.status(500).json({ message: "Failed to update form" });
     }
-  });
+});
 
-  // AI Chat routes
-  app.post('/api/ai-chat', isAuthenticated, async (req: any, res) => {
+
+// --- AI Routes ---
+
+apiRouter.post('/ai-chat', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { message, formId, context } = req.body;
 
-      if (!message) {
-        return res.status(400).json({ message: "Message is required" });
-      }
+      if (!message) return res.status(400).json({ message: "Message is required" });
 
-      const contextData = await Promise.all([
+      const [transcripts, marketData, businessForm] = await Promise.all([
         storage.getSsdcTranscripts(),
         storage.getMarketSurveyData(),
         formId ? storage.getBusinessForm(formId) : null,
       ]);
 
-      const [transcripts, marketData, businessForm] = contextData;
+      const aiResponse = await generateBusinessAdvice(message, { transcripts, marketData, businessForm, context });
 
-      const aiResponse = await generateBusinessAdvice(message, {
-        transcripts: transcripts.slice(0, 5),
-        marketData: marketData.slice(0, 5),
-        businessForm,
-        context,
-      });
-
-      const sessionData = {
+      await storage.createAiChatSession({
         userId,
         formId: formId || null,
         messages: [
           { role: "user", content: message, timestamp: new Date() },
           { role: "assistant", content: aiResponse, timestamp: new Date() }
         ],
-      };
-
-      const session = await storage.createAiChatSession(sessionData);
-      
-      res.json({ 
-        response: aiResponse,
-        sessionId: session.id 
       });
+      
+      res.json({ response: aiResponse });
     } catch (error) {
       console.error("Error in AI chat:", error);
       res.status(500).json({ message: "Failed to process AI request" });
     }
-  });
+});
 
-  app.post('/api/ai-analyze-idea', isAuthenticated, async (req: any, res) => {
+apiRouter.post('/ai-analyze-idea', isAuthenticated, async (req, res) => {
     try {
       const { businessIdea } = req.body;
-      if (!businessIdea) {
-        return res.status(400).json({ message: "Business idea is required" });
-      }
+      if (!businessIdea) return res.status(400).json({ message: "Business idea is required" });
       const analysis = await analyzeBusinessIdea(businessIdea);
       res.json({ analysis });
     } catch (error) {
       console.error("Error analyzing business idea:", error);
       res.status(500).json({ message: "Failed to analyze business idea" });
     }
-  });
+});
 
-  app.post('/api/ai-refine-concept', isAuthenticated, async (req: any, res) => {
+apiRouter.post('/ai-refine-concept', isAuthenticated, async (req, res) => {
     try {
       const { concept, targetMarket, industry } = req.body;
-      if (!concept) {
-        return res.status(400).json({ message: "Business concept is required" });
-      }
+      if (!concept) return res.status(400).json({ message: "Business concept is required" });
       const refinedConcept = await refineBusinessConcept(concept, targetMarket, industry);
       res.json({ refinedConcept });
     } catch (error) {
       console.error("Error refining business concept:", error);
       res.status(500).json({ message: "Failed to refine business concept" });
     }
-  });
+});
 
-  // Admin routes
-  app.post('/api/admin/create-user', isAuthenticated, async (req: any, res) => {
+
+// --- Admin Routes ---
+
+apiRouter.post('/admin/create-user', isAuthenticated, async (req: any, res) => {
     try {
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
       const { id, email, firstName, lastName, isAdmin } = req.body;
-      if (!id || !email) {
-        return res.status(400).json({ message: "ID and email are required" });
-      }
-      const newUser = await storage.upsertUser({
-        id,
-        email,
-        firstName,
-        lastName,
-        isAdmin: isAdmin || false,
-      });
+      if (!id || !email) return res.status(400).json({ message: "ID and email are required" });
+      
+      const newUser = await storage.upsertUser({ id, email, firstName, lastName, isAdmin: isAdmin || false });
       res.status(201).json(newUser);
     } catch (error) {
       console.error("Error creating user:", error);
       res.status(500).json({ message: "Failed to create user" });
     }
-  });
+});
 
-  const httpServer = createServer(app);
-  return httpServer;
-}
+
+export default apiRouter;

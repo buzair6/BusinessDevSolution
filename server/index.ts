@@ -2,69 +2,69 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupAuth } from "./auth";
+import { createServer } from "http";
+import session from "express-session";
+import passport from "./auth";
+import apiRouter from "./api";
 import { setupVite, serveStatic, log } from "./vite";
 
-const app = express();
-app.set('trust proxy', 1); // Trust first proxy
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+async function main() {
+  const app = express();
+  const server = createServer(app);
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  // --- Middleware Setup ---
+  app.set('trust proxy', 1);
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
+  // Session configuration
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    log("SESSION_SECRET is not set. Please add it to your .env file.", "error");
+    throw new Error("SESSION_SECRET is not set in the environment.");
+  }
+  app.use(session({
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    proxy: true,
+    cookie: {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    },
+  }));
 
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
+  // Passport initialization
+  app.use(passport.initialize());
+  app.use(passport.session());
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
+  // --- API Routes ---
+  app.use("/api", apiRouter);
 
-      log(logLine);
-    }
-  });
-
-  next();
-});
-
-(async () => {
-  await setupAuth(app);
-  const server = await registerRoutes(app);
-
+  // --- Error Handling ---
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
     throw err;
   });
 
+  // --- Client/Static Asset Serving ---
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
+  // --- Server Listen ---
   const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
     log(`serving on port ${port}`);
   });
-})();
+}
+
+main().catch(err => {
+  log(err.stack, "error");
+  process.exit(1);
+});
