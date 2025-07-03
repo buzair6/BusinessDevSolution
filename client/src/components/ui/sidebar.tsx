@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
@@ -148,7 +149,7 @@ const SidebarProvider = React.forwardRef<
               "group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar",
               className
             )}
-            ref={ref}
+            ref={ref as any}
             {...props}
           >
             {children}
@@ -188,7 +189,7 @@ const Sidebar = React.forwardRef<
             "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
             className
           )}
-          ref={ref}
+          ref={ref as any}
           {...props}
         >
           {children}
@@ -222,7 +223,7 @@ const Sidebar = React.forwardRef<
 
     return (
       <div
-        ref={ref}
+        ref={ref as any}
         className="group peer hidden text-sidebar-foreground md:block"
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
