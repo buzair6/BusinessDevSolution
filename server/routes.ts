@@ -1,23 +1,22 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { isAuthenticated } from "./auth";
+import { isAuthenticated } from "./auth"; // Import isAuthenticated
 import { 
   insertSsdcTranscriptSchema,
   insertMarketSurveyDataSchema,
   insertBusinessFormSchema,
-  insertAiChatSessionSchema 
+  insertAiChatSessionSchema,
+  User 
 } from "@shared/schema";
 import { generateBusinessAdvice, analyzeBusinessIdea, refineBusinessConcept } from "./gemini";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth routes
-  app.get('/api/auth/user', (req, res) => {
-    if (req.user) {
-      res.json(req.user);
-    } else {
-      res.status(401).json({ message: "Unauthorized" });
-    }
+  // Auth routes - now protected and secure
+  app.get('/api/auth/user', isAuthenticated, (req, res) => {
+    // req.user is guaranteed to be present by isAuthenticated middleware
+    const { password, ...userWithoutPassword } = req.user as User;
+    res.json(userWithoutPassword);
   });
 
   // SSDC Transcripts routes

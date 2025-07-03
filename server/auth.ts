@@ -1,11 +1,11 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import session from "express-session";
-import type { Express, RequestHandler } from "express";
+import type { Express, Request, Response, NextFunction, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { pool } from "./db"; // Import the pool from db.ts
+import { pool } from "./db";
 import { User } from "@shared/schema";
 
 const saltRounds = 10;
@@ -13,7 +13,7 @@ const saltRounds = 10;
 export async function setupAuth(app: Express) {
   const PgStore = connectPg(session);
   const sessionStore = new PgStore({
-    pool: pool, // Use the existing pool
+    pool: pool,
     createTableIfMissing: true,
     tableName: "sessions",
   });
@@ -38,12 +38,12 @@ export async function setupAuth(app: Express) {
       async (email, password, done) => {
         try {
           const user = await storage.getUserByEmail(email);
-          if (!user) {
-            return done(null, false, { message: "Incorrect email." });
+          if (!user || !user.password) {
+            return done(null, false, { message: "Incorrect email or password." });
           }
-          const isMatch = await bcrypt.compare(password, user.password!);
+          const isMatch = await bcrypt.compare(password, user.password);
           if (!isMatch) {
-            return done(null, false, { message: "Incorrect password." });
+            return done(null, false, { message: "Incorrect email or password." });
           }
           return done(null, user);
         } catch (err) {
@@ -69,13 +69,11 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Registration route
+  // Registration route with custom callback
   app.post("/api/register", async (req, res, next) => {
     const { email, password, firstName, lastName } = req.body;
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required." });
+      return res.status(400).json({ message: "Email and password are required." });
     }
 
     try {
@@ -84,10 +82,8 @@ export async function setupAuth(app: Express) {
         return res.status(409).json({ message: "User already exists." });
       }
 
-      // The first user to register becomes an admin
       const userCount = await storage.getUserCount();
       const isAdmin = userCount === 0;
-
       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
       const newUser = await storage.upsertUser({
@@ -101,7 +97,8 @@ export async function setupAuth(app: Express) {
 
       req.login(newUser, (err) => {
         if (err) return next(err);
-        res.status(201).json(newUser);
+        const { password, ...userWithoutPassword } = newUser;
+        res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -109,18 +106,34 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  // Login route
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.json(req.user);
+  // Login route with custom callback
+  app.post("/api/login", (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate("local", (err: Error | null, user: User | false, info: { message: string }) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        return res.status(401).json({ message: info.message || "Login failed" });
+      }
+      req.login(user, (err) => {
+        if (err) {
+          return next(err);
+        }
+        const { password, ...userWithoutPassword } = user;
+        return res.json(userWithoutPassword);
+      });
+    })(req, res, next);
   });
 
   // Logout route
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
-      if (err) {
-        return next(err);
-      }
-      res.status(200).json({ message: "Logged out successfully" });
+      if (err) return next(err);
+      req.session.destroy((err) => {
+        if (err) return next(err);
+        res.clearCookie('connect.sid');
+        res.status(200).json({ message: "Logged out successfully" });
+      });
     });
   });
 }
