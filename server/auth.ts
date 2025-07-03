@@ -5,6 +5,7 @@ import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
+import { pool } from "./db"; // Import the pool from db.ts
 import { User } from "@shared/schema";
 
 const saltRounds = 10;
@@ -12,7 +13,7 @@ const saltRounds = 10;
 export async function setupAuth(app: Express) {
   const PgStore = connectPg(session);
   const sessionStore = new PgStore({
-    conString: process.env.DATABASE_URL,
+    pool: pool, // Use the existing pool
     createTableIfMissing: true,
     tableName: "sessions",
   });
