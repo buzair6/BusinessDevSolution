@@ -4,6 +4,8 @@ dotenv.config();
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 import passport from "./auth";
 import apiRouter from "./api";
 import { setupVite, serveStatic, log } from "./vite";
@@ -18,12 +20,20 @@ async function main() {
   app.use(express.urlencoded({ extended: false }));
 
   // Session configuration
+  const PgStore = connectPg(session);
+  const sessionStore = new PgStore({
+    pool: pool,
+    createTableIfMissing: true,
+    tableName: "sessions",
+  });
+
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
     log("SESSION_SECRET is not set. Please add it to your .env file.", "error");
     throw new Error("SESSION_SECRET is not set in the environment.");
   }
   app.use(session({
+    store: sessionStore,
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
@@ -47,11 +57,11 @@ async function main() {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
     res.status(status).json({ message });
-    throw err;
+    console.error(err);
   });
 
   // --- Client/Static Asset Serving ---
-  if (app.get("env") === "development") {
+  if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);

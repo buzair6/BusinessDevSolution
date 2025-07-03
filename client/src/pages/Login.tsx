@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -44,7 +43,6 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   const loginForm = useForm<LoginFormValues>({
@@ -60,7 +58,6 @@ export default function LoginPage() {
   const mutationOptions = {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      navigate("/");
       toast({
         title: "Success",
         description: `Successfully ${isLogin ? "logged in" : "registered"}.`,
@@ -97,7 +94,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40">
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-md mx-4">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
@@ -108,8 +105,8 @@ export default function LoginPage() {
           </CardTitle>
           <CardDescription>
             {isLogin
-              ? "Sign in to continue to your dashboard."
-              : "The first user to register will be an admin."}
+              ? "Sign in to your account."
+              : "The first user to register becomes an admin."}
           </CardDescription>
         </CardHeader>
         <CardContent>
