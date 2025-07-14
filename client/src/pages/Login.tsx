@@ -203,6 +203,7 @@ export default function LoginPage() {
                         <Input
                           type="email"
                           placeholder="name@example.com"
+                          autoComplete="off"
                           {...field}
                         />
                       </FormControl>
