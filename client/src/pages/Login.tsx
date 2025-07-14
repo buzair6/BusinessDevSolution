@@ -30,7 +30,7 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-  email: z.string().min(1, { message: "Email is required." }),
+  email: z.string().email({ message: "Invalid email address." }),
   password: z
     .string()
     .min(8, { message: "Password must be at least 8 characters." }),
@@ -123,7 +123,11 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="name@example.com" {...field} />
+                        <Input
+                          type="email"
+                          placeholder="name@example.com"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -196,7 +200,11 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="name@example.com" {...field} />
+                        <Input
+                          type="email"
+                          placeholder="name@example.com"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
