@@ -1,17 +1,16 @@
 {
-    "compilerOptions": {
-      "composite": true,
-      "skipLibCheck": true,
-      "module": "ESNext",
-      "moduleResolution": "bundler",
-      "allowSyntheticDefaultImports": true,
-      "strict": true,
-      "baseUrl": ".",
-      "paths": {
-        "@/*": ["client/src/*"],
-        "@shared/*": ["shared/*"]
-      }
-    },
-    "include": ["server", "vite.config.ts", "tailwind.config.ts", "postcss.config.js"]
-  }
-  
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["client/src/*"],
+      "@shared/*": ["shared/*"]
+    }
+  },
+  "include": ["server", "shared", "vite.config.ts", "tailwind.config.ts", "postcss.config.js"]
+}
