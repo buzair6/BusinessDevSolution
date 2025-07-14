@@ -5,7 +5,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { pool } from "./db";
+import { pool } from "./db.js"; // Changed this line
 import passport from "./auth";
 import apiRouter from "./api";
 import { setupVite, serveStatic, log } from "./vite";
