@@ -1,9 +1,9 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient"; //
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; //
-import { Button } from "@/components/ui/button"; //
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; //
-import { Badge } from "@/components/ui/badge"; //
+import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,11 +11,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"; //
+} from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, CheckCircle, XCircle, Edit, Trash2, Loader2, LightbulbOff } from "lucide-react";
-import { useToast } from "@/hooks/use-toast"; //
-import { type BusinessIdea } from "@shared/schema"; // Import BusinessIdea type
-import { Link } from "wouter"; // For navigation
+import { useToast } from "@/hooks/use-toast";
+import { type BusinessIdea } from "@shared/schema";
+import { Link } from "wouter";
 
 export default function AdminIdeasPage() {
   const { toast } = useToast();
@@ -26,40 +26,39 @@ export default function AdminIdeasPage() {
     isError,
     error,
   } = useQuery<BusinessIdea[]>({
-    queryKey: ["adminAllIdeas"],
-    queryFn: getQueryFn({ on401: "throw" }), // Throw error if unauthorized
-    queryKey: ["/api/admin/ideas"], // Fetch all ideas for admin
+    queryKey: ["adminAllIdeas", "/api/admin/ideas"], // Combined queryKey
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: "pending" | "approved" | "rejected" }) =>
-      apiRequest("PUT", `/api/admin/ideas/${id}/status`, { status }), //
+      apiRequest("PUT", `/api/admin/ideas/${id}/status`, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminAllIdeas"] }); // Refresh ideas list
-      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] }); // Refresh public ideas list
-      toast({ title: "Idea status updated!" }); //
+      queryClient.invalidateQueries({ queryKey: ["adminAllIdeas"] });
+      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] });
+      toast({ title: "Idea status updated!" });
     },
     onError: (err: Error) => {
       toast({
-        title: "Status Update Failed", //
-        description: err.message || "Could not update idea status.", //
-        variant: "destructive", //
+        title: "Status Update Failed",
+        description: err.message || "Could not update idea status.",
+        variant: "destructive",
       });
     },
   });
 
   const deleteIdeaMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("DELETE", `/api/admin/ideas/${id}`), //
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/admin/ideas/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminAllIdeas"] }); // Refresh ideas list
-      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] }); // Refresh public ideas list
-      toast({ title: "Idea deleted successfully!" }); //
+      queryClient.invalidateQueries({ queryKey: ["adminAllIdeas"] });
+      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] });
+      toast({ title: "Idea deleted successfully!" });
     },
     onError: (err: Error) => {
       toast({
-        title: "Deletion Failed", //
-        description: err.message || "Could not delete the idea.", //
-        variant: "destructive", //
+        title: "Deletion Failed",
+        description: err.message || "Could not delete the idea.",
+        variant: "destructive",
       });
     },
   });

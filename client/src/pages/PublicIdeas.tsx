@@ -1,49 +1,49 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient"; //
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; //
-import { Button } from "@/components/ui/button"; //
+import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { LightbulbOff, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast"; //
-import { type BusinessIdea } from "@shared/schema"; // Import BusinessIdea type
-import { IdeaCard } from "@/components/IdeaCard"; // Import the separate IdeaCard component
+import { useToast } from "@/hooks/use-toast";
+import { type BusinessIdea } from "@shared/schema";
+import { IdeaCard } from "@/components/ui/IdeaCard"; // Corrected import path for IdeaCard
+import { Link } from "wouter";
 
 export default function PublicIdeasPage() {
   const { toast } = useToast();
 
   const { data: ideas, isLoading, isError, error } = useQuery<BusinessIdea[]>({
-    queryKey: ["approvedIdeas"],
-    queryFn: getQueryFn({ on401: "returnNull" }), // Changed to returnNull as this is publicly accessible
-    staleTime: 5 * 60 * 1000, // Data considered fresh for 5 minutes
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    queryKey: ["/api/ideas/approved"], // Corrected queryKey to match API endpoint
+    queryKey: ["approvedIdeas", "/api/ideas/approved"], // Combined queryKey
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const upvoteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("POST", `/api/ideas/${id}/upvote`), //
+    mutationFn: (id: number) => apiRequest("POST", `/api/ideas/${id}/upvote`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] }); // Invalidate to refetch updated votes
-      toast({ title: "Idea Upvoted!" }); //
+      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] });
+      toast({ title: "Idea Upvoted!" });
     },
     onError: (err: Error) => {
       toast({
-        title: "Upvote Failed", //
-        description: err.message || "Could not upvote the idea. Please login to vote.", //
-        variant: "destructive", //
+        title: "Upvote Failed",
+        description: err.message || "Could not upvote the idea. Please login to vote.",
+        variant: "destructive",
       });
     },
   });
 
   const downvoteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("POST", `/api/ideas/${id}/downvote`), //
+    mutationFn: (id: number) => apiRequest("POST", `/api/ideas/${id}/downvote`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] }); // Invalidate to refetch updated votes
-      toast({ title: "Idea Downvoted!" }); //
+      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] });
+      toast({ title: "Idea Downvoted!" });
     },
     onError: (err: Error) => {
       toast({
-        title: "Downvote Failed", //
-        description: err.message || "Could not downvote the idea. Please login to vote.", //
-        variant: "destructive", //
+        title: "Downvote Failed",
+        description: err.message || "Could not downvote the idea. Please login to vote.",
+        variant: "destructive",
       });
     },
   });

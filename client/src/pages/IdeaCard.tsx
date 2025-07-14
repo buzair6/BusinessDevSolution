@@ -1,13 +1,13 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; //
-import { Button } from "@/components/ui/button"; //
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
-import { type BusinessIdea } from "@shared/schema"; // Import the type
+import { type BusinessIdea } from "@shared/schema";
 
 interface IdeaCardProps {
   idea: BusinessIdea;
   onUpvote: (id: number) => void;
   onDownvote: (id: number) => void;
-  isVoting: boolean; // Prop to indicate if a vote is in progress
+  isVoting: boolean;
 }
 
 export const IdeaCard = ({ idea, onUpvote, onDownvote, isVoting }: IdeaCardProps) => {

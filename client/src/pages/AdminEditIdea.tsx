@@ -3,17 +3,17 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter"; // Import useRoute and Link for parameter access
-import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient"; //
-import { Button } from "@/components/ui/button"; //
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; //
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; //
-import { Input } from "@/components/ui/input"; //
-import { Textarea } from "@/components/ui/textarea"; //
-import { useToast } from "@/hooks/use-toast"; //
+import { useRoute, Link } from "wouter";
+import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, Wrench } from "lucide-react";
-import { type BusinessIdea, updateBusinessIdeaSchema } from "@shared/schema"; // Import schema and type
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; //
+import { type BusinessIdea, updateBusinessIdeaSchema } from "@shared/schema";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type EditIdeaFormValues = z.infer<typeof updateBusinessIdeaSchema>;
 
@@ -28,10 +28,9 @@ export default function AdminEditIdeaPage() {
     isError,
     error,
   } = useQuery<BusinessIdea>({
-    queryKey: ["adminIdea", ideaId],
-    queryFn: getQueryFn({ on401: "throw" }), //
-    enabled: ideaId !== null, // Only fetch if ideaId is valid
-    queryKey: [`/api/admin/ideas/${ideaId}`], //
+    queryKey: ["adminIdea", ideaId, `/api/admin/ideas/${ideaId}`], // Combined queryKey, include ideaId for uniqueness
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: ideaId !== null,
   });
 
   const form = useForm<EditIdeaFormValues>({
@@ -52,18 +51,18 @@ export default function AdminEditIdeaPage() {
 
   const updateIdeaMutation = useMutation({
     mutationFn: (data: EditIdeaFormValues) =>
-      apiRequest("PUT", `/api/admin/ideas/${ideaId}`, data), //
+      apiRequest("PUT", `/api/admin/ideas/${ideaId}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminIdea", ideaId] }); // Refresh individual idea data
-      queryClient.invalidateQueries({ queryKey: ["adminAllIdeas"] }); // Refresh list of ideas
-      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] }); // Refresh public ideas list
-      toast({ title: "Idea updated successfully!" }); //
+      queryClient.invalidateQueries({ queryKey: ["adminIdea", ideaId] });
+      queryClient.invalidateQueries({ queryKey: ["adminAllIdeas"] });
+      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] });
+      toast({ title: "Idea updated successfully!" });
     },
     onError: (err: Error) => {
       toast({
-        title: "Update Failed", //
-        description: err.message || "Could not update the idea.", //
-        variant: "destructive", //
+        title: "Update Failed",
+        description: err.message || "Could not update the idea.",
+        variant: "destructive",
       });
     },
   });
