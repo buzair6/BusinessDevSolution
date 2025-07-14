@@ -1,28 +1,29 @@
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth"; //
+import { Button } from "@/components/ui/button"; //
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; //
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { LogOut, Shield, User as UserIcon } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient"; //
+import { useToast } from "@/hooks/use-toast"; //
+import { LogOut, Shield, User as UserIcon, Lightbulb, ClipboardList } from "lucide-react"; // Added new icons
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
 import { Terminal } from "lucide-react"; // Import an icon for errors
+import { Link } from "wouter"; // Import Link for navigation
 
 export default function Dashboard() {
   const { user, isLoading, error } = useAuth(); // Destructure error from useAuth
-  const { toast } = useToast();
+  const { toast } = useToast(); //
 
   const logoutMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/logout"),
+    mutationFn: () => apiRequest("POST", "/api/logout"), //
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({ title: "Logged out successfully." });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] }); //
+      toast({ title: "Logged out successfully." }); //
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to log out.",
-        variant: "destructive",
+        title: "Error", //
+        description: "Failed to log out.", //
+        variant: "destructive", //
       });
     },
   });
@@ -112,11 +113,36 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
+
+          {/* User-specific actions */}
+          <Link href="/submit-idea">
+            <Button className="w-full" variant="outline">
+              <Lightbulb className="mr-2 h-4 w-4" />
+              Submit a New Idea
+            </Button>
+          </Link>
+          <Link href="/ideas">
+            <Button className="w-full" variant="outline">
+              <ClipboardList className="mr-2 h-4 w-4" />
+              View Community Ideas
+            </Button>
+          </Link>
+
+          {/* Admin-specific actions */}
+          {user.isAdmin && (
+            <Link href="/admin/ideas">
+              <Button className="w-full" variant="secondary">
+                <Shield className="mr-2 h-4 w-4" />
+                Manage Ideas (Admin)
+              </Button>
+            </Link>
+          )}
+
           <Button
             onClick={() => logoutMutation.mutate()}
             disabled={logoutMutation.isPending}
             className="w-full"
-            variant="outline"
+            variant="destructive"
           >
             <LogOut className="mr-2 h-4 w-4" />
             {logoutMutation.isPending ? "Logging out..." : "Log Out"}

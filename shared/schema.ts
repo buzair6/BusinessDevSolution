@@ -6,6 +6,8 @@ import {
   jsonb,
   index,
   boolean,
+  integer,
+  serial, // Added for auto-incrementing ID
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -35,6 +37,46 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// New Business Ideas table
+export const businessIdeas = pgTable(
+  "business_ideas",
+  {
+    id: serial("id").primaryKey(), // Auto-incrementing ID
+    userId: varchar("user_id").notNull().references(() => users.id), // Link to the user who submitted it
+    title: varchar("title", { length: 256 }).notNull(),
+    description: text("description").notNull(),
+    status: varchar("status", { enum: ["pending", "approved", "rejected"] }).default("pending").notNull(),
+    upvotes: integer("upvotes").default(0).notNull(),
+    downvotes: integer("downvotes").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    statusIdx: index("IDX_business_ideas_status").on(table.status),
+    userIdIdx: index("IDX_business_ideas_user_id").on(table.userId),
+  })
+);
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// New Business Idea Types for Zod validation and Drizzle inference
+export const insertBusinessIdeaSchema = createInsertSchema(businessIdeas, {
+  userId: z.string().uuid(), // Assuming user IDs are UUIDs (from crypto.randomUUID() in api.ts)
+  title: z.string().min(5, "Title must be at least 5 characters.").max(256, "Title cannot exceed 256 characters."),
+  description: z.string().min(20, "Description must be at least 20 characters."),
+  status: z.enum(["pending", "approved", "rejected"]).default("pending").optional(), // status is optional on insert as it defaults
+});
+
+// Schema for updating an idea (all fields optional for partial update)
+export const updateBusinessIdeaSchema = createInsertSchema(businessIdeas).pick({
+  title: true,
+  description: true,
+  status: true,
+}).partial();
+
+
+export type BusinessIdea = typeof businessIdeas.$inferSelect;
+export type NewBusinessIdea = typeof insertBusinessIdeaSchema._type;
+export type UpdateBusinessIdea = z.infer<typeof updateBusinessIdeaSchema>; // Infer type from the partial schema
