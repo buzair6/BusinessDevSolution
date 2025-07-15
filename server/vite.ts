@@ -36,21 +36,28 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
+
+  // In development, all unmatched routes (not /api) should fall through to serve the client-side app
+  // This ensures client-side routing works. API routes are handled before this middleware.
   app.use("*", async (req, res, next) => {
+    // Check if the request is for an API route that might have been unhandled.
+    // If so, let the global error handler or specific API error handler manage it.
+    if (req.originalUrl.startsWith('/api')) {
+        return next(); // Let subsequent middleware (like the API error handler) handle it
+    }
+
     const url = req.originalUrl;
-
     try {
-      const clientTemplate = path.resolve(
-        vite.config.root,
-        "index.html"
-      );
+      // Resolve the client's index.html
+      const clientTemplatePath = path.resolve(vite.config.root, "index.html");
 
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      // Read, transform, and serve the HTML
+      let template = await fs.promises.readFile(clientTemplatePath, "utf-8");
       template = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(template);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
-      next(e);
+      next(e); // Pass errors to Express's error handling middleware
     }
   });
 }

@@ -5,7 +5,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { pool } from "./db.js"; // Changed this line
+import { pool } from "./db.js";
 import passport from "./auth";
 import apiRouter from "./api";
 import { setupVite, serveStatic, log } from "./vite";
@@ -52,20 +52,39 @@ async function main() {
   // --- API Routes ---
   app.use("/api", apiRouter);
 
-  // --- Error Handling ---
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // --- Error Handling for API routes specifically ---
+  // This middleware will catch any errors from API routes and send a JSON response
+  app.use("/api", (err: any, req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-    console.error(err);
+    console.error(`API Error: ${status} - ${message}`, err.stack);
+    res.status(status).json({ message, stack: process.env.NODE_ENV === "development" ? err.stack : undefined });
   });
 
   // --- Client/Static Asset Serving ---
   if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
+    await setupVite(app, server); // setupVite will handle serving the client and HMR
+    // The previous app.use("*") in setupVite is removed or modified within setupVite itself
+    // to not serve index.html for unmatched API routes.
   } else {
     serveStatic(app);
   }
+
+  // --- Global Error Handler (for non-API routes or unhandled errors) ---
+  // This should be the last middleware.
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    console.error(`Global Error: ${status} - ${message}`, err.stack);
+
+    // For non-API requests (e.g., direct client route access), still send HTML
+    // Otherwise, send JSON for any unhandled non-API requests if preferred.
+    if (req.accepts('json')) {
+      res.status(status).json({ message, stack: process.env.NODE_ENV === "development" ? err.stack : undefined });
+    } else {
+      res.status(status).send(`<h1>${status} - ${message}</h1><pre>${process.env.NODE_ENV === "development" ? err.stack : ''}</pre>`);
+    }
+  });
 
   // --- Server Listen ---
   const port = 5000;
