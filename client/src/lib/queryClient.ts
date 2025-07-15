@@ -29,11 +29,21 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // FIX: Find the URL in the query key, which is the string that starts with a '/'.
+    const url = queryKey.find(
+      (key) => typeof key === "string" && key.startsWith("/")
+    ) as string;
+
+    if (!url) {
+      throw new Error(`No URL found in queryKey: [${queryKey.join(", ")}]`);
+    }
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      queryClient.setQueryData(queryKey, null);
       return null;
     }
 

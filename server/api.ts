@@ -3,7 +3,7 @@ import passport from "./auth";
 import { isAuthenticated } from "./auth"; //
 import { storage } from "./storage"; //
 import { User, insertBusinessIdeaSchema, updateBusinessIdeaSchema } from "../shared/schema.js"; // Import new schema/types
-import type { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction, RequestHandler } from "express";
 import bcrypt from "bcryptjs";
 
 const apiRouter = Router();
