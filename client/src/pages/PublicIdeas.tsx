@@ -21,7 +21,7 @@ export default function PublicIdeasPage() {
   const upvoteMutation = useMutation({
     mutationFn: (id: number) => apiRequest("POST", `/api/ideas/${id}/upvote`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] });
+      queryClient.invalidateQueries({ queryKey: ["approvedIdeas", "/api/ideas/approved"] });
       toast({ title: "Idea Upvoted!" });
     },
     onError: (err: Error) => {
@@ -36,7 +36,7 @@ export default function PublicIdeasPage() {
   const downvoteMutation = useMutation({
     mutationFn: (id: number) => apiRequest("POST", `/api/ideas/${id}/downvote`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] });
+      queryClient.invalidateQueries({ queryKey: ["approvedIdeas", "/api/ideas/approved"] });
       toast({ title: "Idea Downvoted!" });
     },
     onError: (err: Error) => {
@@ -73,7 +73,7 @@ export default function PublicIdeasPage() {
               <p className="text-sm">{error?.message || "Unknown error"}</p>
             </div>
             <Button
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] })}
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["approvedIdeas", "/api/ideas/approved"] })}
               className="w-full mt-4"
               variant="outline"
             >

@@ -34,8 +34,8 @@ export default function AdminIdeasPage() {
     mutationFn: ({ id, status }: { id: number; status: "pending" | "approved" | "rejected" }) =>
       apiRequest("PUT", `/api/admin/ideas/${id}/status`, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminAllIdeas"] });
-      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] });
+      queryClient.invalidateQueries({ queryKey: ["adminAllIdeas", "/api/admin/ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["approvedIdeas", "/api/ideas/approved"] });
       toast({ title: "Idea status updated!" });
     },
     onError: (err: Error) => {
@@ -50,8 +50,8 @@ export default function AdminIdeasPage() {
   const deleteIdeaMutation = useMutation({
     mutationFn: (id: number) => apiRequest("DELETE", `/api/admin/ideas/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminAllIdeas"] });
-      queryClient.invalidateQueries({ queryKey: ["approvedIdeas"] });
+      queryClient.invalidateQueries({ queryKey: ["adminAllIdeas", "/api/admin/ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["approvedIdeas", "/api/ideas/approved"] });
       toast({ title: "Idea deleted successfully!" });
     },
     onError: (err: Error) => {
@@ -98,7 +98,7 @@ export default function AdminIdeasPage() {
               <p className="text-sm">{error?.message || "Unknown error"}</p>
             </div>
             <Button
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["adminAllIdeas"] })}
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["adminAllIdeas", "/api/admin/ideas"] })}
               className="w-full mt-4"
               variant="outline"
             >
